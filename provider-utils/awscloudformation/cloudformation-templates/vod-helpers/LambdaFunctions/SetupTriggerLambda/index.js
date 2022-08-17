@@ -80,19 +80,24 @@ function createNotifications(config) {
   const LambdaFunctionConfig = [];
 
   Object.values(config.TriggerSuffix).forEach((suffix) => {
-    const suffixConfigure = {
-      Events: ['s3:ObjectCreated:*'],
-      LambdaFunctionArn: config.IngestArn,
-      Filter: {
-        Key: {
-          FilterRules: [{
-            Name: 'suffix',
-            Value: suffix,
-          }],
+    const createConfig = suffix => {
+      return suffixConfigure = {
+        Events: ['s3:ObjectCreated:*'],
+        LambdaFunctionArn: config.IngestArn,
+        Filter: {
+          Key: {
+            FilterRules: [{
+              Name: 'suffix',
+              Value: suffix,
+            }],
+          },
         },
-      },
-    };
-    LambdaFunctionConfig.push(suffixConfigure);
+      };
+    }
+    
+    // TODO: What about .mP4?
+    LambdaFunctionConfig.push(createConfig(suffix.toLowerCase()));
+    LambdaFunctionConfig.push(createConfig(suffix.toUpperCase()));
   });
   const params = {
     Bucket: config.BucketName,

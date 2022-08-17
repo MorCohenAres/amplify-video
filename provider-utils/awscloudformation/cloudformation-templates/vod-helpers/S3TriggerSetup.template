@@ -89,6 +89,10 @@ Resources:
         - ".mp4"
         - ".m2ts"
         - ".mov"
+        - ".MPG"
+        - ".MP4"
+        - ".M2TS"
+        - ".MOV"
 
   rCreateOutputTrigger:
     Type: "Custom::OutputTrigger"
