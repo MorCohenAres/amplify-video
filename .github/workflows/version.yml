@@ -17,6 +17,6 @@ jobs:
           title: '[Version Release] New version Release'
           body: >
             This PR is auto-generated.
-          reviewers: wizage
+          reviewers: morcohenares
           head: ${{ github.ref }}
           base: master
