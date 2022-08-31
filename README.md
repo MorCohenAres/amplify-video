@@ -1,7 +1,7 @@
 # Amplify Video Plugin
 <p>
-  <a href="https://www.npmjs.com/package/amplify-category-video">
-      <img src="https://img.shields.io/npm/v/amplify-category-video.svg" />
+  <a href="https://www.npmjs.com/package/@morares/amplify-category-video">
+      <img src="https://img.shields.io/npm/v/@morares/amplify-category-video.svg" />
   </a>
 </p>
 
@@ -24,7 +24,7 @@ amplify configure
 With the Amplify CLI installed, install this plugin:
 
 ```
-npm i amplify-category-video -g
+npm i @moreares/amplify-category-video -g
 ```
 
 Add a video resource to your Amplify project

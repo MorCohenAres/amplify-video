@@ -1,7 +1,7 @@
 {
   "name": "@morares/amplify-category-video",
-  "version": "3.9.3",
-  "description": "Plugin for Amplify to add support for live streaming. Made for Unicorn Trivia Workshop",
+  "version": "3.9.4",
+  "description": "Plugin for Amplify to add support for live streaming",
   "main": "index.js",
   "scripts": {
     "postinstall": "node scripts/post-install.js",
@@ -18,7 +18,7 @@
   "license": "Apache 2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/awslabs/amplify-video.git"
+    "url": "https://github.com/MorCohenAres/amplify-video"
   },
   "keywords": [
     "amplify",
