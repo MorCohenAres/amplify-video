@@ -1,6 +1,6 @@
 {
-  "name": "amplify-category-video",
-  "version": "3.9.2",
+  "name": "@morares/amplify-category-video",
+  "version": "3.9.3",
   "description": "Plugin for Amplify to add support for live streaming. Made for Unicorn Trivia Workshop",
   "main": "index.js",
   "scripts": {
@@ -14,7 +14,7 @@
     "lint-fix": "eslint . --fix",
     "release": "node scripts/release.js"
   },
-  "author": "wizage",
+  "author": "morares",
   "license": "Apache 2.0",
   "repository": {
     "type": "git",
