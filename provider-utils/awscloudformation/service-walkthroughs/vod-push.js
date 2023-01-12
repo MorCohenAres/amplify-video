@@ -3,6 +3,8 @@ const fs = require('fs-extra');
 const path = require('path');
 const ejs = require('ejs');
 const { generateKeyPairSync } = require('crypto');
+const {ensureEnvParamManager} = require('@aws-amplify/amplify-environment-parameters')
+
 const headlessMode = require('../utils/headless-mode');
 const question = require('../../vod-questions.json');
 const { getAWSConfig } = require('../utils/get-aws');
@@ -405,7 +407,11 @@ async function createCDNEnvVars(context, options, resourceName, aws) {
   cdnEnvConfigDetails.publicKeyName = publicKeyName;
   cdnEnvConfigDetails.secretPem = secretCreate.Name;
   cdnEnvConfigDetails.secretPemArn = secretCreate.ARN;
-  amplify.saveEnvResourceParameters(context, 'video', resourceName, cdnEnvConfigDetails);
+
+  const { instance: envParamManager } = await ensureEnvParamManager(projectDetails.localEnvInfo.envName)
+  envParamManager.getResourceParamManager('video', resourceName).setParams(cdnEnvConfigDetails)
+
+  await videoParamManager.save()
 }
 
 async function createCMS(context, apiName, props) {

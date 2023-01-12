@@ -6,6 +6,8 @@ const mime = require('mime-types');
 const ora = require('ora');
 const ejs = require('ejs');
 const YAML = require('yaml');
+const { ensureEnvParamManager } = require('@aws-amplify/amplify-environment-parameters');
+
 const { getAWSConfig } = require('./get-aws');
 
 async function buildTemplates(context, props) {
@@ -14,9 +16,13 @@ async function buildTemplates(context, props) {
   const { serviceType } = amplifyMeta.video[props.shared.resourceName];
   const spinner = ora('Building video resources...');
   spinner.start();
-  return build(context, props.shared.resourceName, serviceType, props).then(() => {
-    spinner.succeed('All resources built.');
-  });
+  return build(context, props.shared.resourceName, serviceType, props)
+    .then(() => {
+      spinner.succeed('All resources built.');
+    })
+    .catch(e => {
+      spinner.fail(`Couldn\'t build resources because of the following error:\n${e}`)
+    });
 }
 
 async function pushTemplates(context) {
@@ -42,10 +48,15 @@ async function pushTemplates(context) {
       );
     });
   }
-  await Promise.all(buildProjects);
-  await Promise.all(pushProjects).then(() => {
+  
+  try {
+    await Promise.all(buildProjects);
+    await Promise.all(pushProjects);
+
     spinner.succeed('All resources copied.');
-  });
+  } catch {
+    spinner.fail(`Couldn\'t copy resources because of the following error:\n${e}`)
+  }
 }
 
 async function build(context, resourceName, projectType, props) {
@@ -56,7 +67,7 @@ async function build(context, resourceName, projectType, props) {
     props = JSON.parse(fs.readFileSync(`${targetDir}/video/${resourceName}/props.json`));
   }
   if (projectType === 'video-on-demand') {
-    props = getVODEnvVars(context, props, resourceName);
+    props = await getVODEnvVars(context, props, resourceName);
   } else if (projectType === 'livestream') {
     props = getLivestreamEnvVars(context, props);
   }
@@ -66,18 +77,18 @@ async function build(context, resourceName, projectType, props) {
   return props;
 }
 
-function getVODEnvVars(context, props, resourceName) {
+async function getVODEnvVars(context, props, resourceName) {
+  const S3_UUID_PARAM = 's3UUID'
+
   const { amplify } = context;
-  const currentEnvInfo = amplify.getEnvInfo().envName;
+  const currentEnvName = amplify.getEnvInfo().envName;
   const targetDir = amplify.pathManager.getBackendDirPath();
   const amplifyMeta = amplify.getProjectMeta();
   const projectBucket = amplifyMeta.providers.awscloudformation.DeploymentBucketName;
-  let amplifyProjectDetails = amplify.getProjectDetails();
-
-  if (!((((amplifyProjectDetails.teamProviderInfo[currentEnvInfo].categories
-    || {}).video
-    || {})[resourceName]
-    || {}).s3UUID)) {
+  const { instance: envParamManager } = await ensureEnvParamManager(currentEnvName)
+  
+  const videoParamManager = envParamManager.getResourceParamManager('video', resourceName)
+  if (!videoParamManager.hasParam(S3_UUID_PARAM)) {
     let uuid;
     if (props.shared.bucketInput) {
       // Migrate to env setup
@@ -86,8 +97,8 @@ function getVODEnvVars(context, props, resourceName) {
       uuid = Math.random().toString(36).substring(2, 8)
            + Math.random().toString(36).substring(2, 8);
     }
-    amplify.saveEnvResourceParameters(context, 'video', resourceName, { s3UUID: uuid });
-    amplifyProjectDetails = amplify.getProjectDetails();
+
+    videoParamManager.setParam(S3_UUID_PARAM, uuid)
   }
 
   // Migration from old props to new props.
@@ -98,8 +109,6 @@ function getVODEnvVars(context, props, resourceName) {
     delete props.shared.bucketOutput;
     fs.writeFileSync(`${targetDir}/video/${resourceName}/props.json`, JSON.stringify(props, null, 4));
   }
-  let envVars = amplifyProjectDetails.teamProviderInfo[currentEnvInfo]
-    .categories.video[resourceName];
 
   if (props.contentDeliveryNetwork && props.contentDeliveryNetwork.signedKey) {
     if (props.contentDeliveryNetwork.publicKey) {
@@ -111,10 +120,9 @@ function getVODEnvVars(context, props, resourceName) {
         secretPem: props.contentDeliveryNetwork.secretPem,
         secretPemArn: props.contentDeliveryNetwork.secretPemArn,
       };
-      amplify.saveEnvResourceParameters(context, 'video', resourceName, envSave);
-      amplifyProjectDetails = amplify.getProjectDetails();
-      envVars = amplifyProjectDetails.teamProviderInfo[currentEnvInfo]
-        .categories.video[resourceName];
+      
+      videoParamManager.setParams(envSave)
+
       delete props.contentDeliveryNetwork.publicKey;
       delete props.contentDeliveryNetwork.rPublicName;
       delete props.contentDeliveryNetwork.publicKeyName;
@@ -122,21 +130,25 @@ function getVODEnvVars(context, props, resourceName) {
       delete props.contentDeliveryNetwork.secretPemArn;
       fs.writeFileSync(`${targetDir}/video/${resourceName}/props.json`, JSON.stringify(props, null, 4));
     }
+
     const cdnEnv = {
-      publicKey: envVars.publicKey,
-      rPublicName: envVars.rPublicName,
-      publicKeyName: envVars.publicKeyName,
-      secretPem: envVars.secretPem,
-      secretPemArn: envVars.secretPemArn,
+      publicKey: videoParamManager.getParam('publicKey'),
+      rPublicName: videoParamManager.getParam('rPublicName'),
+      publicKeyName: videoParamManager.getParam('publicKeyName'),
+      secretPem: videoParamManager.getParam('secretPem'),
+      secretPemArn: videoParamManager.getParam('secretPemArn')
     };
 
     Object.assign(props.contentDeliveryNetwork, cdnEnv);
   }
   props.env = {
     bucket: projectBucket,
-    bucketInput: `${resourceName.toLowerCase()}-${currentEnvInfo}-input-${envVars.s3UUID}`.slice(0, 63),
-    bucketOutput: `${resourceName.toLowerCase()}-${currentEnvInfo}-output-${envVars.s3UUID}`.slice(0, 63),
+    bucketInput: `${resourceName.toLowerCase()}-${currentEnvName}-input-${videoParamManager.getParam(S3_UUID_PARAM)}`.slice(0, 63),
+    bucketOutput: `${resourceName.toLowerCase()}-${currentEnvName}-output-${videoParamManager.getParam(S3_UUID_PARAM)}`.slice(0, 63),
   };
+
+  await envParamManager.save()
+
   return props;
 }
 
