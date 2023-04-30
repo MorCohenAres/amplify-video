@@ -411,7 +411,7 @@ async function createCDNEnvVars(context, options, resourceName, aws) {
   const { instance: envParamManager } = await ensureEnvParamManager(projectDetails.localEnvInfo.envName)
   envParamManager.getResourceParamManager('video', resourceName).setParams(cdnEnvConfigDetails)
 
-  await videoParamManager.save()
+  await envParamManager.save()
 }
 
 async function createCMS(context, apiName, props) {
