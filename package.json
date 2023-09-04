@@ -1,6 +1,6 @@
 {
   "name": "amplify-plugin-video",
-  "version": "3.10.3",
+  "version": "3.11.0",
   "description": "Plugin for Amplify to add support for live streaming",
   "main": "index.js",
   "scripts": {

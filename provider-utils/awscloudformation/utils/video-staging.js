@@ -54,7 +54,7 @@ async function pushTemplates(context) {
     await Promise.all(pushProjects);
 
     spinner.succeed('All resources copied.');
-  } catch {
+  } catch(e) {
     spinner.fail(`Couldn\'t copy resources because of the following error:\n${e}`)
   }
 }

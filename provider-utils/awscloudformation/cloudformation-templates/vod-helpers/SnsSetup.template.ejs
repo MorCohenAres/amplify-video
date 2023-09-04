@@ -88,7 +88,7 @@ Resources:
       Description: Invoked on MediaConvert status events 
       Handler: index.handler
       Role: !GetAtt rMediaconvertStatusLambdaRole.Arn
-      Runtime: nodejs14.x
+      Runtime: nodejs18.x
       Timeout: 30
       Code:
         S3Bucket: !Ref pS3
