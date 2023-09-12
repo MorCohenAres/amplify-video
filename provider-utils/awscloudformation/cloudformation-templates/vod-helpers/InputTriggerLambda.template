@@ -67,7 +67,7 @@ Resources:
       Description: Sends a notification when a new object is put into the bucket
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
-      Runtime: nodejs18.x
+      Runtime: nodejs16.x
       Timeout: 30
       Code:
         S3Bucket: !Ref pS3
