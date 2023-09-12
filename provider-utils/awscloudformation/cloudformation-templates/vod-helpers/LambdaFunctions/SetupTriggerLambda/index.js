@@ -1,7 +1,5 @@
-/* eslint-disable */
-const AWS = require('aws-sdk');
-/* eslint-enable */
-const s3 = new AWS.S3({});
+const { S3Client, PutBucketNotificationConfigurationCommand } = require("@aws-sdk/client-s3");
+const s3 = new S3Client();
 
 /* eslint-disable */
 exports.handler = function (event, context) {
@@ -101,10 +99,9 @@ function createNotifications(config) {
   };
   params.NotificationConfiguration.LambdaFunctionConfigurations = LambdaFunctionConfig;
 
-  s3.putBucketNotificationConfiguration(params, (err, data) => {
-    if (err) console.log(err, err.stack);
-    else console.log(data);
-  });
+  s3.send(new PutBucketNotificationConfigurationCommand(params))
+    .then(data => console.log(data))
+    .catch(error => console.error(error, error.stack));
 }
 
 function deleteNotifications(config) {
